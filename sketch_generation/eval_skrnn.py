@@ -67,8 +67,8 @@ def load_pretrained_uncond(data_type):
         decoder.load_state_dict(torch.load('saved_model/UncondDec_cat.pt',map_location='cuda:0')['model'])
         data_enc, data_dec, max_seq_len = get_data(data_type='cat')
     else:
-        encoder.load_state_dict(torch.load('saved_model/UncondEnc_kanji.pt')['model'])
-        decoder.load_state_dict(torch.load('saved_model/UncondDec_kanji.pt')['model'])
+        encoder.load_state_dict(torch.load('saved_model/UncondEnc_kanji.pt',map_location='cuda:0')['model'])
+        decoder.load_state_dict(torch.load('saved_model/UncondDec_kanji.pt',map_location='cuda:0')['model'])
         data_enc, data_dec, max_seq_len = get_data(data_type='kanji')
     return encoder, decoder, hidden_enc_dim, latent_dim, max_seq_len, cond_gen, bi_mode, device
 
@@ -101,11 +101,11 @@ def load_pretrained_congen(data_type):
                             dropout_p = dropout_p, n_layers = n_layers, batch_size = batch_size,\
                             latent_dim = latent_dim, device = device, cond_gen= cond_gen).to(device)
     if data_type == 'cat':
-        encoder.load_state_dict(torch.load('saved_model/condEnc_cat.pt')['model'])
-        decoder.load_state_dict(torch.load('saved_model/condDec_cat.pt')['model'])
+        encoder.load_state_dict(torch.load('saved_model/condEnc_cat.pt', map_location="cuda:0")['model'])
+        decoder.load_state_dict(torch.load('saved_model/condDec_cat.pt', map_location="cuda:0")['model'])
         data_enc, data_dec, max_seq_len = get_data(data_type='cat')
     else:
-        encoder.load_state_dict(torch.load('saved_model/condEnc_kanji.pt')['model'])
-        decoder.load_state_dict(torch.load('saved_model/condDec_kanji.pt')['model'])
+        encoder.load_state_dict(torch.load('saved_model/condEnc_kanji.pt', map_location="cuda:0")['model'])
+        decoder.load_state_dict(torch.load('saved_model/condDec_kanji.pt', map_location="cuda:0")['model'])
         data_enc, data_dec, max_seq_len = get_data(data_type='kanji')
     return encoder, decoder, hidden_dec_dim, latent_dim, max_seq_len, cond_gen, bi_mode, device

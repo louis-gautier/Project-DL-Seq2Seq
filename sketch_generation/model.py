@@ -219,12 +219,12 @@ def skrnn_sample(encoder, decoder, hidden_size, latent_dim, start=[0,0,1,0,0], t
                             rho[idx].detach().cpu().numpy())
         
         mixture_params.append([float(mu1[idx].detach().cpu()),float(mu2[idx].detach().cpu()), float(s1[idx].detach().cpu()), 
-                            float(s2[idx].detach().cpu()), float(rho[idx].detach().cpu()), q])
+                            float(s2[idx].detach().cpu()), float(rho[idx].detach().cpu()), q.detach().cpu()])
         strokes[i, :] = [next_x1, next_x2, eos[0], eos[1], eos[2]]
         if eos[-1] == 1:
             end_stroke = i+1
             break
         prev_x[0], prev_x[1], prev_x[2], prev_x[3], prev_x[4] = next_x1, next_x2, eos[0], eos[1], eos[2]
-        
+    
     mix_params = np.array(mixture_params)
     return strokes[:end_stroke,[0,1,3]], mix_params
