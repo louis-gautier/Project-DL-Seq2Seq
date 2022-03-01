@@ -46,7 +46,7 @@ plot_every = 1 # plot the strokes using current trained model
 rnn_dir = 2 # 1 for unidirection,  2 for bi-direction
 bi_mode = 2 # bidirectional mode:- 1 for addition 2 for concatenation
 cond_gen = False # use either unconditional or conditional generation
-data_type = 'cat' # 'cat' and 'kanji'
+data_type = 'bridge' # 'cat' and 'kanji'
 
 if not cond_gen:
     weight_kl = 0.0

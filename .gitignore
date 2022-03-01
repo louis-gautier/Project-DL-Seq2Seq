@@ -1,0 +1,24 @@
+neural machine translation/__pycache__/data_load.cpython-39.pyc
+neural machine translation/data/eng-fra.txt
+neural machine translation/data/names/Arabic.txt
+neural machine translation/data/names/Chinese.txt
+neural machine translation/data/names/Czech.txt
+neural machine translation/data/names/Dutch.txt
+neural machine translation/data/names/English.txt
+neural machine translation/data/names/French.txt
+neural machine translation/data/names/German.txt
+neural machine translation/data/names/Greek.txt
+neural machine translation/data/names/Irish.txt
+neural machine translation/data/names/Italian.txt
+neural machine translation/data/names/Japanese.txt
+neural machine translation/data/names/Korean.txt
+neural machine translation/data/names/Polish.txt
+neural machine translation/data/names/Portuguese.txt
+neural machine translation/data/names/Russian.txt
+neural machine translation/data/names/Scottish.txt
+neural machine translation/data/names/Spanish.txt
+neural machine translation/data/names/Vietnamese.txt
+sketch_generation/all-files.zip
+sketch_generation/__pycache__/data_load.cpython-39.pyc
+sketch_generation/__pycache__/eval_skrnn.cpython-39.pyc
+sketch_generation/__pycache__/model.cpython-39.pyc
