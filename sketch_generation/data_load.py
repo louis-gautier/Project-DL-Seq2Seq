@@ -100,13 +100,13 @@ def get_data(data_type='kanji', max_len=200, part="train"):
           raw_data = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)[part]
         else:
           n = len(datasets)
-          raw_data = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)[part]
+          raw_data = np.load('sketch-rnn-datasets/'+datasets[0]+'/sketchrnn_'+datasets[0]+'.npz', encoding='latin1',allow_pickle=True)[part]
           np.random.shuffle(raw_data)
-          raw_data = raw_data[:len(raw_data)/n]
-          for dataset in datasets:
-            rd = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)[part]
+          raw_data = raw_data[:int(len(raw_data)/n)]
+          for i in range(1,len(datasets)):
+            rd = np.load('sketch-rnn-datasets/'+datasets[i]+'/sketchrnn_'+datasets[i]+'.npz', encoding='latin1',allow_pickle=True)[part]
             np.random.shuffle(rd)
-            rd = rd[:len(rd)/n]
+            rd = rd[:int(len(rd)/n)]
             raw_data = np.concatenate((raw_data,rd),axis=0)
 
         

@@ -13,9 +13,10 @@ from model import encoder_skrnn, decoder_skrnn
 
 def data_exploration(data_type, part, num_samples):
     data_enc, data_dec, max_seq_len = get_data(data_type=data_type,part=part)
-    np.random.shuffle(data_enc)
     for i in range(num_samples):
-      draw_image(data_enc[i][:,[0,1,3]])
+      idx = np.random.randint(0,len(data_enc))
+      print("image id:"+str(idx))
+      draw_image(data_enc[idx][:,[0,1,3]])
 
 
 def draw_image(a, color=None, save=False, save_dir=None):

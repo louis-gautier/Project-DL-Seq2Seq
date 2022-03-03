@@ -7,7 +7,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 data_type = 'cat' # can be kanji character or cat
 
-data_enc, _ , _ = get_data(data_type=data_type)
+data_enc, _ , _ = get_data(data_type=data_type, part="test")
 # 70000*129(max_length)*5
 encoder, decoder, hid_dim, latent_dim, t_step, cond_gen, mode, device = load_pretrained_congen(data_type)
 
