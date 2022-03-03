@@ -19,6 +19,18 @@ from data_load import timeSince, get_data, save_checkpoint
 from model import encoder_skrnn, decoder_skrnn, skrnn_loss, skrnn_sample
 from eval_skrnn import draw_image
 
+import sys
+
+if len(sys.argv) < 6:
+    print("Wrong number of arguments! Usage: python", sys.argv[0], "<cond_gen> <data_type> <w_kl> <n_layers> <GRU>")
+    exit()
+else:
+    cond_gen = bool(int(sys.argv[1]))
+    data_type = sys.argv[2]
+    weight_kl = float(sys.argv[3])
+    n_layers = int(sys.argv[4])
+    GRU = bool(int(sys.argv[1]))
+
 warnings.simplefilter('ignore')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,7 +44,6 @@ num_gaussian = 20
 dropout_p = 0.2
 batch_size = 50
 latent_dim = 64 
-weight_kl = 0.5
 kl_tolerance = 0.2
 eta_min = 0.01
 R_step =  0.99995
@@ -45,8 +56,6 @@ plot_every = 1 # plot the strokes using current trained model
 
 rnn_dir = 2 # 1 for unidirection,  2 for bi-direction
 bi_mode = 2 # bidirectional mode:- 1 for addition 2 for concatenation
-cond_gen = False # use either unconditional or conditional generation
-data_type = 'bridge' # 'cat' and 'kanji'
 
 if not cond_gen:
     weight_kl = 0.0
@@ -55,11 +64,11 @@ if not cond_gen:
 
 encoder = encoder_skrnn(input_size = 5, hidden_size = hidden_enc_dim, hidden_dec_size=hidden_dec_dim,\
                     dropout_p = dropout_p,n_layers = n_layers, batch_size = batch_size, latent_dim = latent_dim,\
-                    device = device, cond_gen= cond_gen, bi_mode= bi_mode, rnn_dir = rnn_dir).to(device)
+                    device = device, cond_gen= cond_gen, bi_mode= bi_mode, rnn_dir = rnn_dir, GRU = GRU).to(device)
 
 decoder = decoder_skrnn(input_size = 5, hidden_size = hidden_dec_dim, num_gaussian = num_gaussian,\
                         dropout_p = dropout_p, n_layers = n_layers, batch_size = batch_size,\
-                        latent_dim = latent_dim, device = device, cond_gen= cond_gen).to(device)
+                        latent_dim = latent_dim, device = device, cond_gen= cond_gen, GRU=GRU).to(device)
 
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
 decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)

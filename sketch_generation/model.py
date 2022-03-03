@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 class encoder_skrnn(nn.Module):
     def __init__(self, input_size, hidden_size, hidden_dec_size, dropout_p = 0.05, n_layers=1,\
-                 bi_mode= 1, rnn_dir = 1, batch_size=1, latent_dim=64, device= None, cond_gen = False):
+                 bi_mode= 1, rnn_dir = 1, batch_size=1, latent_dim=64, device= None, cond_gen = False, GRU=False):
         super(encoder_skrnn, self).__init__()
         
         self.hidden_size = hidden_size
@@ -22,8 +22,11 @@ class encoder_skrnn(nn.Module):
         self.cond_gen = cond_gen
         self.rnn_dir = rnn_dir
         self.bi_mode = bi_mode
-        
-        self.rnn = nn.LSTM(input_size, hidden_size, n_layers, dropout=dropout_p,\
+        if not GRU:
+            self.rnn = nn.LSTM(input_size, hidden_size, n_layers, dropout=dropout_p,\
+                           batch_first=True, bidirectional=rnn_dir==2)
+        else:
+            self.rnn = nn.GRU(input_size, hidden_size, n_layers, dropout=dropout_p,\
                            batch_first=True, bidirectional=rnn_dir==2)
         self.initial = nn.Linear(self.Nz, hidden_dec_size*2)
         
@@ -65,7 +68,7 @@ class encoder_skrnn(nn.Module):
     
 class decoder_skrnn(nn.Module):
     def __init__(self, input_size, hidden_size, num_gaussian, dropout_p = 0.05, n_layers=1,\
-                 batch_size=1, latent_dim=64, device= None, cond_gen=False):
+                 batch_size=1, latent_dim=64, device= None, cond_gen=False, GRU=False):
         super(decoder_skrnn, self).__init__()
 
         self.hidden_size = hidden_size
@@ -75,10 +78,17 @@ class decoder_skrnn(nn.Module):
         self.Nz = latent_dim
         self.cond_gen = cond_gen
         if cond_gen:
-            self.rnn = nn.LSTM(self.Nz+input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
-            self.initial = nn.Linear(self.Nz, 2*hidden_size)
+            if not GRU:
+                self.rnn = nn.LSTM(self.Nz+input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
+                self.initial = nn.Linear(self.Nz, 2*hidden_size)
+            else:
+                self.rnn = nn.GRU(self.Nz+input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
+                self.initial = nn.Linear(self.Nz, 2*hidden_size)
         else:
-            self.rnn = nn.LSTM(input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
+            if not GRU:
+                self.rnn = nn.LSTM(input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
+            else:
+                self.rnn = nn.GRU(input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
 
         self.gmm = nn.Linear(hidden_size, num_gaussian*6+3)
 
@@ -156,10 +166,10 @@ def skrnn_loss(gmm_params, kl_params, data, mask=[], device =None):
 
 
 def skrnn_sample(encoder, decoder, hidden_size, latent_dim, start=[0,0,1,0,0], temperature=1.0, \
-                  time_step=100, scale = 20, bi_mode= 1, random_state= 98, cond_gen=False, inp_enc=False, device=None):
+                  time_step=100, scale = 20, bi_mode= 1, random_state= 98, cond_gen=False, inp_enc=False, device=None, initial_hidden_dec=None):
     
-    np.random.seed(random_state)
-    encoder.train(False)
+    #np.random.seed(random_state)
+    encoder.train(False) #equivalent of encoder.eval()
     decoder.train(False)
 
     def adjust_temp(pi_pdf, temp):
@@ -195,8 +205,10 @@ def skrnn_sample(encoder, decoder, hidden_size, latent_dim, start=[0,0,1,0,0], t
     mixture_params = []
     
     hidden_enc = (torch.zeros(bi_mode, 1, hidden_size, device=device), torch.zeros(bi_mode, 1, hidden_size, device=device))
-    hidden_dec = (torch.zeros(1, 1, hidden_size, device=device), torch.zeros(1, 1, hidden_size, device=device))
-    
+    if initial_hidden_dec is None:
+      hidden_dec = (torch.zeros(1, 1, hidden_size, device=device), torch.zeros(1, 1, hidden_size, device=device))
+    else:
+      hidden_dec = initial_hidden_dec
     if cond_gen:
         z, hidden_dec, mu, sigma = encoder(inp_enc, hidden_enc)
     else:
@@ -227,4 +239,4 @@ def skrnn_sample(encoder, decoder, hidden_size, latent_dim, start=[0,0,1,0,0], t
         prev_x[0], prev_x[1], prev_x[2], prev_x[3], prev_x[4] = next_x1, next_x2, eos[0], eos[1], eos[2]
     
     mix_params = np.array(mixture_params)
-    return strokes[:end_stroke,[0,1,3]], mix_params
+    return strokes[:end_stroke,[0,1,3]], mix_params 

@@ -88,13 +88,27 @@ def get_batch_validation(data_enc, data_dec, batch_size):
     return data_e, data_d
 
 
-def get_data(data_type='kanji', max_len=200):
+def get_data(data_type='kanji', max_len=200, part="train"):
     if data_type == 'kanji':
         raw_data = pd.read_pickle('sketch-rnn-datasets/kanji/kanji.cpkl')
     elif data_type == 'cat':
-        raw_data = np.load('sketch-rnn-datasets/cat/cat.npz', encoding='latin1',allow_pickle=True)['train']
+        raw_data = np.load('sketch-rnn-datasets/cat/cat.npz', encoding='latin1',allow_pickle=True)[part]
     else:
-        raw_data = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)['train']    
+        # If the dataset is a mixture of several datasets, they should be separated with underscores
+        datasets = data_type.split("_")
+        if(len(datasets)==1):
+          raw_data = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)[part]
+        else:
+          n = len(datasets)
+          raw_data = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)[part]
+          np.random.shuffle(raw_data)
+          raw_data = raw_data[:len(raw_data)/n]
+          for dataset in datasets:
+            rd = np.load('sketch-rnn-datasets/'+data_type+'/sketchrnn_'+data_type+'.npz', encoding='latin1',allow_pickle=True)[part]
+            np.random.shuffle(rd)
+            rd = rd[:len(rd)/n]
+            raw_data = np.concatenate((raw_data,rd),axis=0)
+
         
     all_len = [len(i)for i in raw_data]
     max_len = max(all_len)
