@@ -29,7 +29,7 @@ else:
     data_type = sys.argv[2]
     weight_kl = float(sys.argv[3])
     n_layers = int(sys.argv[4])
-    GRU = bool(int(sys.argv[1]))
+    GRU = bool(int(sys.argv[5]))
 
 warnings.simplefilter('ignore')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

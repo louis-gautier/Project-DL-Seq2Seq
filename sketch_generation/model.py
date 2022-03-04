@@ -34,7 +34,6 @@ class encoder_skrnn(nn.Module):
         self.sigma = nn.Linear(hidden_size*bi_mode, self.Nz)
 
     def forward(self, inp_enc, hidden):
-        
         output, (hidden, cell_state) = self.rnn(inp_enc, hidden)
 
         if self.rnn_dir == 2:
