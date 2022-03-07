@@ -22,6 +22,7 @@ class encoder_skrnn(nn.Module):
         self.cond_gen = cond_gen
         self.rnn_dir = rnn_dir
         self.bi_mode = bi_mode
+        self.GRU = GRU
         if not GRU:
             self.rnn = nn.LSTM(input_size, hidden_size, n_layers, dropout=dropout_p,\
                            batch_first=True, bidirectional=rnn_dir==2)
@@ -34,35 +35,62 @@ class encoder_skrnn(nn.Module):
         self.sigma = nn.Linear(hidden_size*bi_mode, self.Nz)
 
     def forward(self, inp_enc, hidden):
-        output, (hidden, cell_state) = self.rnn(inp_enc, hidden)
-
-        if self.rnn_dir == 2:
-            hidden_forward, hidden_backward = torch.split(hidden,1,0)
-            if self.bi_mode == 1:
-                hidden_cat = hidden_forward + hidden_backward
+        if not self.GRU:
+            output, (hidden, cell_state) = self.rnn(inp_enc, hidden)
+            if self.rnn_dir == 2:
+                hidden_forward, hidden_backward = torch.split(hidden,1,0)
+                if self.bi_mode == 1:
+                    hidden_cat = hidden_forward + hidden_backward
+                else:
+                    hidden_cat = torch.cat([hidden_forward.squeeze(0), hidden_backward.squeeze(0)],1)
             else:
-                hidden_cat = torch.cat([hidden_forward.squeeze(0), hidden_backward.squeeze(0)],1)
+                if self.training:
+                    hidden = hidden_cat.squeeze(0)
+                else:
+                    hidden = hidden_cat.view(1,self.hidden_size)
+
+            mu = self.mu(hidden_cat)
+            sigma_hat = self.sigma(hidden_cat)
+            sigma = torch.exp(sigma_hat/2.)
+            
+            z = mu + sigma*torch.normal(torch.zeros(self.Nz,device=self.device),torch.ones(self.Nz, device=self.device))
+
+            initial_params = torch.tanh(self.initial(z))
+            
+            (dec_hidden, dec_cell_state) = initial_params[:,:self.hidden_size].contiguous(), initial_params[:,self.hidden_size:].contiguous()
+
+            return z, (dec_hidden.unsqueeze(0), dec_cell_state.unsqueeze(0)), mu, sigma_hat
         else:
-            if self.training:
-                hidden = hidden_cat.squeeze(0)
+            output, hidden = self.rnn(inp_enc, hidden)
+            if self.rnn_dir == 2:
+                hidden_forward, hidden_backward = torch.split(hidden,1,0)
+                if self.bi_mode == 1:
+                    hidden_cat = hidden_forward + hidden_backward
+                else:
+                    hidden_cat = torch.cat([hidden_forward.squeeze(0), hidden_backward.squeeze(0)],1)
             else:
-                hidden = hidden_cat.view(1,self.hidden_size)
+                if self.training:
+                    hidden = hidden_cat.squeeze(0)
+                else:
+                    hidden = hidden_cat.view(1,self.hidden_size)
 
-        mu = self.mu(hidden_cat)
-        sigma_hat = self.sigma(hidden_cat)
-        sigma = torch.exp(sigma_hat/2.)
-        
-        z = mu + sigma*torch.normal(torch.zeros(self.Nz,device=self.device),torch.ones(self.Nz, device=self.device))
+                mu = self.mu(hidden_cat)
+                sigma_hat = self.sigma(hidden_cat)
+                sigma = torch.exp(sigma_hat/2.)
+                
+                z = mu + sigma*torch.normal(torch.zeros(self.Nz,device=self.device),torch.ones(self.Nz, device=self.device))
 
-        initial_params = torch.tanh(self.initial(z))
-        
-        (dec_hidden, dec_cell_state) = initial_params[:,:self.hidden_size].contiguous(), initial_params[:,self.hidden_size:].contiguous()
+                initial_params = torch.tanh(self.initial(z))
+                
+                dec_hidden = initial_params[:,:self.hidden_size].contiguous()
 
-        return z, (dec_hidden.unsqueeze(0), dec_cell_state.unsqueeze(0)), mu, sigma_hat
+                return z, dec_hidden.unsqueeze(0), mu, sigma_hat
 
     def initHidden(self):
-        return (torch.zeros(self.n_layers*self.rnn_dir, self.batch_size, self.hidden_size, device=self.device), 
-                torch.zeros(self.n_layers*self.rnn_dir, self.batch_size, self.hidden_size, device=self.device))
+        if not self.GRU:
+            return (torch.zeros(self.n_layers*self.rnn_dir, self.batch_size, self.hidden_size, device=self.device), torch.zeros(self.n_layers*self.rnn_dir, self.batch_size, self.hidden_size, device=self.device))
+        else:
+            return torch.zeros(self.n_layers*self.rnn_dir, self.batch_size, self.hidden_size, device=self.device)
 
     
 class decoder_skrnn(nn.Module):
@@ -76,6 +104,7 @@ class decoder_skrnn(nn.Module):
         self.num_gaussian = num_gaussian
         self.Nz = latent_dim
         self.cond_gen = cond_gen
+        self.GRU = GRU
         if cond_gen:
             if not GRU:
                 self.rnn = nn.LSTM(self.Nz+input_size, hidden_size, n_layers, dropout=dropout_p, batch_first=True)
@@ -165,7 +194,7 @@ def skrnn_loss(gmm_params, kl_params, data, mask=[], device =None):
 
 
 def skrnn_sample(encoder, decoder, hidden_size, latent_dim, start=[0,0,1,0,0], temperature=1.0, \
-                  time_step=100, scale = 20, bi_mode= 1, random_state= 98, cond_gen=False, inp_enc=False, device=None, initial_hidden_dec=None):
+                  time_step=100, scale = 20, bi_mode= 1, random_state= 98, cond_gen=False, inp_enc=False, device=None, initial_hidden_dec=None,initial_z=None):
     
     #np.random.seed(random_state)
     encoder.train(False) #equivalent of encoder.eval()
@@ -202,16 +231,24 @@ def skrnn_sample(encoder, decoder, hidden_size, latent_dim, start=[0,0,1,0,0], t
     prev_x = torch.tensor(start,dtype=torch.float, device=device)
     strokes = np.zeros((time_step, 5), dtype=np.float32)
     mixture_params = []
-    
-    hidden_enc = (torch.zeros(bi_mode, 1, hidden_size, device=device), torch.zeros(bi_mode, 1, hidden_size, device=device))
+    if not encoder.GRU:
+        hidden_enc = (torch.zeros(bi_mode, 1, hidden_size, device=device), torch.zeros(bi_mode, 1, hidden_size, device=device))
+    else:
+        hidden_enc = torch.zeros(bi_mode, 1, hidden_size, device=device)
     if initial_hidden_dec is None:
-      hidden_dec = (torch.zeros(1, 1, hidden_size, device=device), torch.zeros(1, 1, hidden_size, device=device))
+      if not decoder.GRU:
+        hidden_dec = (torch.zeros(1, 1, hidden_size, device=device), torch.zeros(1, 1, hidden_size, device=device))
+      else:
+        hidden_dec = torch.zeros(1, 1, hidden_size, device=device)
     else:
       hidden_dec = initial_hidden_dec
     if cond_gen:
         z, hidden_dec, mu, sigma = encoder(inp_enc, hidden_enc)
     else:
-        z = torch.zeros(1, latent_dim, device=device)
+        if initial_z is None:
+          z = torch.zeros(1, latent_dim, device=device)
+        else:
+          z=initial_z
     
     end_stroke = time_step
     

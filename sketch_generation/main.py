@@ -136,8 +136,8 @@ for epoch in range(epochs):
         draw_image(strokes)
     
 if cond_gen:
-    fname_enc = 'CondEnc_'+data_type+'.pt'
-    fname_dec = 'CondDec_'+data_type+'.pt'
+    fname_enc = 'CondEnc_'+data_type+str(weight_kl)+'.pt'
+    fname_dec = 'CondDec_'+data_type+str(weight_kl)+'.pt'
     save_checkpoint(epoch, encoder, encoder_optimizer, 'saved_model', \
                         filename = fname_enc)
     save_checkpoint(epoch, decoder, decoder_optimizer, 'saved_model', \
