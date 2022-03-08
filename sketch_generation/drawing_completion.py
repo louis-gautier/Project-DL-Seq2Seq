@@ -42,4 +42,4 @@ def drawing_completion(first_line_csv, data_type):
     colors = ["red"] + ["darkgreen" for i in range(int(np.sum(strokes[:,2])))]
     draw_image(strokes,save=False,save_dir='drawings/completion',color=colors)
 
-drawing_completion(None, "cat")
+drawing_completion(first_line_csv=None, data_type="cat")

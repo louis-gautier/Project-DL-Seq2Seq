@@ -54,7 +54,6 @@ def PCA_plot(data_type, n_points, bi_mode):
     ax.set_ylim(pc2_min, pc2_max)
 
     for i, sketch in enumerate(sketches):
-        print(sketch.shape)
         sketch_path = SketchPath(sketch, factor=7e+1)
         sketch_path.vertices[::,1] *= -1
         sketch_path.vertices += z_pca[i]
