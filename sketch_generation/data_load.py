@@ -91,8 +91,6 @@ def get_batch_validation(data_enc, data_dec, batch_size):
 def get_data(data_type='kanji', max_len=200, part="train"):
     if data_type == 'kanji':
         raw_data = pd.read_pickle('sketch-rnn-datasets/kanji/kanji.cpkl')
-    elif data_type == 'cat':
-        raw_data = np.load('sketch-rnn-datasets/cat/cat.npz', encoding='latin1',allow_pickle=True)[part]
     else:
         # If the dataset is a mixture of several datasets, they should be separated with underscores
         datasets = data_type.split("_")

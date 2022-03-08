@@ -45,14 +45,13 @@ def draw_image(a, color=None, save=False, save_dir=None):
     
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_pretrained_uncond(data_type, n_layers=1, GRU=False):
+def load_pretrained_uncond(data_type, model_name=None, n_layers=1, GRU=False, batch_size=50):
     ####################################################
     # default parameters, do not change
     hidden_enc_dim = 256
     hidden_dec_dim = 256
     num_gaussian = 20 
     dropout_p = 0.2
-    batch_size = 50
     latent_dim = 64 
 
     rnn_dir = 2 # 1 for unidirection,  2 for bi-direction
@@ -73,21 +72,24 @@ def load_pretrained_uncond(data_type, n_layers=1, GRU=False):
                             dropout_p = dropout_p, n_layers = n_layers, batch_size = batch_size,\
                             latent_dim = latent_dim, device = device, cond_gen= cond_gen, GRU=GRU).to(device)
 
-    
-    encoder.load_state_dict(torch.load('saved_model/UncondEnc_'+data_type+'.pt',map_location='cuda:0')['model'])
-    decoder.load_state_dict(torch.load('saved_model/UncondDec_'+data_type+'.pt',map_location='cuda:0')['model'])
-    data_enc, data_dec, max_seq_len = get_data(data_type=data_type)
+    if model_name is None:
+        encoder.load_state_dict(torch.load('saved_model/UncondEnc_'+data_type+'.pt',map_location='cuda:0')['model'])
+        decoder.load_state_dict(torch.load('saved_model/UncondDec_'+data_type+'.pt',map_location='cuda:0')['model'])
+        data_enc, data_dec, max_seq_len = get_data(data_type=data_type)
+    else:
+        encoder.load_state_dict(torch.load('saved_model/UncondEnc_'+model_name+'.pt',map_location='cuda:0')['model'])
+        decoder.load_state_dict(torch.load('saved_model/UncondDec_'+model_name+'.pt',map_location='cuda:0')['model'])
+        data_enc, data_dec, max_seq_len = get_data(data_type=data_type)
     
     return encoder, decoder, hidden_enc_dim, latent_dim, max_seq_len, cond_gen, bi_mode, device
 
-def load_pretrained_congen(data_type, n_layers=1, GRU=False):
+def load_pretrained_congen(data_type, model_name=None, n_layers=1, GRU=False, batch_size=50):
     ####################################################
     # default parameters, do not change
     hidden_enc_dim = 256
     hidden_dec_dim = 256
     num_gaussian = 20 
     dropout_p = 0.2
-    batch_size = 50
     latent_dim = 64 
 
     rnn_dir = 2 # 1 for unidirection,  2 for bi-direction
@@ -107,7 +109,12 @@ def load_pretrained_congen(data_type, n_layers=1, GRU=False):
     decoder = decoder_skrnn(input_size = 5, hidden_size = hidden_dec_dim, num_gaussian = num_gaussian,\
                             dropout_p = dropout_p, n_layers = n_layers, batch_size = batch_size,\
                             latent_dim = latent_dim, device = device, cond_gen= cond_gen, GRU=GRU).to(device)
-    encoder.load_state_dict(torch.load('saved_model/condEnc_'+data_type+'.pt',map_location='cuda:0')['model'])
-    decoder.load_state_dict(torch.load('saved_model/condDec_'+data_type+'.pt',map_location='cuda:0')['model'])
-    data_enc, data_dec, max_seq_len = get_data(data_type=data_type)
+    if model_name is None:
+        encoder.load_state_dict(torch.load('saved_model/condEnc_'+data_type+'.pt',map_location='cuda:0')['model'])
+        decoder.load_state_dict(torch.load('saved_model/condDec_'+data_type+'.pt',map_location='cuda:0')['model'])
+        data_enc, data_dec, max_seq_len = get_data(data_type=data_type)
+    else:
+        encoder.load_state_dict(torch.load('saved_model/condEnc_'+model_name+'.pt',map_location='cuda:0')['model'])
+        decoder.load_state_dict(torch.load('saved_model/condDec_'+model_name+'.pt',map_location='cuda:0')['model'])
+        data_enc, data_dec, max_seq_len = get_data(data_type=data_type)
     return encoder, decoder, hidden_dec_dim, latent_dim, max_seq_len, cond_gen, bi_mode, device

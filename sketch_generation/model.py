@@ -74,17 +74,17 @@ class encoder_skrnn(nn.Module):
                 else:
                     hidden = hidden_cat.view(1,self.hidden_size)
 
-                mu = self.mu(hidden_cat)
-                sigma_hat = self.sigma(hidden_cat)
-                sigma = torch.exp(sigma_hat/2.)
-                
-                z = mu + sigma*torch.normal(torch.zeros(self.Nz,device=self.device),torch.ones(self.Nz, device=self.device))
+            mu = self.mu(hidden_cat)
+            sigma_hat = self.sigma(hidden_cat)
+            sigma = torch.exp(sigma_hat/2.)
+            
+            z = mu + sigma*torch.normal(torch.zeros(self.Nz,device=self.device),torch.ones(self.Nz, device=self.device))
 
-                initial_params = torch.tanh(self.initial(z))
-                
-                dec_hidden = initial_params[:,:self.hidden_size].contiguous()
+            initial_params = torch.tanh(self.initial(z))
+            
+            dec_hidden = initial_params[:,:self.hidden_size].contiguous()
 
-                return z, dec_hidden.unsqueeze(0), mu, sigma_hat
+            return z, dec_hidden.unsqueeze(0), mu, sigma_hat
 
     def initHidden(self):
         if not self.GRU:
