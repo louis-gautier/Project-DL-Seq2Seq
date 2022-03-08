@@ -12,6 +12,8 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from matplotlib.path import Path
 
+# Code inspired from http://louistiao.me/notes/exploring-the-google-quickdraw-dataset-with-sketchrnn-part-3/
+
 class SketchPath(Path):
     def __init__(self, data, factor=.2, *args, **kwargs):
         print(data.shape)
